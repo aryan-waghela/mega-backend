@@ -5,6 +5,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import { randomUUID } from "crypto";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -58,10 +59,13 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Avatar file is required");
   }
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath, "avatar-temp");
+  const avatarPublicId = randomUUID();
+  const coverImagePublicId = randomUUID();
+
+  const avatar = await uploadOnCloudinary(avatarLocalPath, avatarPublicId);
   const coverImage = await uploadOnCloudinary(
     coverImageLocalPath,
-    "cover-temp"
+    coverImagePublicId
   );
 
   if (!avatar) {
@@ -72,9 +76,11 @@ const registerUser = asyncHandler(async (req, res) => {
     fullName,
     avatar: {
       url: avatar.url,
+      public_id: avatarPublicId,
     },
     coverImage: {
       url: coverImage?.url || "",
+      public_id: coverImage?.url ? coverImagePublicId : undefined,
     },
     email,
     password,
@@ -151,8 +157,8 @@ const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: {
-        refreshToken: undefined,
+      $unset: {
+        refreshToken: 1,
       },
     },
     {
@@ -276,14 +282,21 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
   const avatar = await uploadOnCloudinary(
     avatarLocalPath,
-    req.user?.avatar?.publicId
+    req.user?.avatar?.public_id
   );
 
   if (!avatar.url) throw new ApiError(400, "Error while uploading avatar");
 
-  const user = await User.findById(req.user._id).select("-password");
-
-  user.avatar.url = avatar.url;
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: avatar?.url,
+        public_id: req.user?.avatar?.public_id,
+      },
+    },
+    { new: true }
+  ).select("-password");
 
   await user.save({ validateBeforeSave: false });
 
@@ -300,13 +313,24 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
   const coverImage = await uploadOnCloudinary(
     coverImageLocalPath,
-    req.user?.coverImage?.publicId
+    req.user?.coverImage?.public_id
   );
 
   if (!coverImage.url)
     throw new ApiError(400, "Error while uploading coverImage");
 
-  const user = await User.findById(req.user._id).select("-password");
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        coverImage: {
+          url: coverImage?.url,
+          public_id: req.user?.coverImage?.public_id,
+        },
+      },
+    },
+    { new: true }
+  ).select("-password");
 
   user.coverImage.url = coverImage.url;
 
@@ -431,9 +455,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(
-      new ApiResponse(200, user[0], "Watch history fetched successfully")
-    );
+    .json(new ApiResponse(200, user[0], "Watch history fetched successfully"));
 });
 
 export {

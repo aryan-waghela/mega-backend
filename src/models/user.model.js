@@ -1,9 +1,6 @@
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import { randomUUID } from "crypto";
-import { renamePublicId } from "../utils/cloudinary.js";
-import { ApiError } from "../utils/ApiErrors.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -33,9 +30,8 @@ const userSchema = new mongoose.Schema(
         type: String, // cloudanary url
         required: true,
       },
-      publicId: {
+      public_id: {
         type: "UUID",
-        default: () => randomUUID(), // avatar publicId
         unique: true,
       },
     },
@@ -44,9 +40,8 @@ const userSchema = new mongoose.Schema(
         type: String, // cloudanary url
         required: true,
       },
-      publicId: {
+      public_id: {
         type: "UUID",
-        default: () => randomUUID(),
         unique: true, // cover image publicId
       },
     },
@@ -70,30 +65,6 @@ const userSchema = new mongoose.Schema(
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
   this.password = await bcrypt.hash(this.password, 10);
-});
-
-userSchema.pre("save", async function () {
-  if (this.isNew || this.isModified("avatar.publicId")) {
-    const updated = await renamePublicId(
-      "avatar-temp",
-      this.avatar.publicId.toString()
-    );
-
-    if (!updated) throw new ApiError(400, "Unable to update public_id");
-
-    
-    else console.log("Avatar public_id updated to :", updated.public_id);
-  }
-
-  if (this.isNew || this.isModified("coverImage.publicId")) {
-    const updated = await renamePublicId(
-      "cover-temp",
-      this.coverImage.publicId.toString()
-    );
-
-    if (!updated) throw new ApiError(400, "Unable to update public_id");
-    else console.log("CoverImage public_id updated to :", updated.public_id);
-  }
 });
 
 userSchema.methods.isPasswordCorrent = async function (password) {

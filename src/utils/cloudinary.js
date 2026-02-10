@@ -13,9 +13,8 @@ const uploadOnCloudinary = async (localFilePath, publicId) => {
 
     const options = {
       resource_type: "auto",
-      public_id: publicId ?? undefined,
+      public_id: publicId,
       overwrite: !!publicId,
-      invalidate: !!publicId,
     };
 
     // upload the file on cloudinary
@@ -31,23 +30,4 @@ const uploadOnCloudinary = async (localFilePath, publicId) => {
   }
 };
 
-const renamePublicId = async (from, to) => {
-  try {
-    if (!from || !to) return null;
-
-    const options = {
-      type: "upload",
-      display_name: to,
-    };
-
-    await cloudinary.uploader.explicit(from, options);
-    const updatedAsset = await cloudinary.uploader.rename(from, to);
-
-    return updatedAsset;
-  } catch (error) {
-    console.log(error);
-    return null;
-  }
-};
-
-export { uploadOnCloudinary, renamePublicId };
+export { uploadOnCloudinary };
