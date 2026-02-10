@@ -7,17 +7,22 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const uploadOnCloudinary = async (localFilePath) => {
+const uploadOnCloudinary = async (localFilePath, publicId) => {
   try {
     if (!localFilePath) return null;
 
-    // upload the file on cloudinary
-    const response = await cloudinary.uploader.upload(localFilePath, {
+    const options = {
       resource_type: "auto",
-    });
+      public_id: publicId ?? undefined,
+      overwrite: !!publicId,
+      invalidate: !!publicId,
+    };
+
+    // upload the file on cloudinary
+    const response = await cloudinary.uploader.upload(localFilePath, options);
 
     // File has been uploaded successfully
-    fs.unlinkSync(localFilePath)
+    fs.unlinkSync(localFilePath);
 
     return response;
   } catch (error) {
@@ -26,4 +31,23 @@ const uploadOnCloudinary = async (localFilePath) => {
   }
 };
 
-export { uploadOnCloudinary };
+const renamePublicId = async (from, to) => {
+  try {
+    if (!from || !to) return null;
+
+    const options = {
+      type: "upload",
+      display_name: to,
+    };
+
+    await cloudinary.uploader.explicit(from, options);
+    const updatedAsset = await cloudinary.uploader.rename(from, to);
+
+    return updatedAsset;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+};
+
+export { uploadOnCloudinary, renamePublicId };

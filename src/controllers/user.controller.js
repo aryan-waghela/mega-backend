@@ -57,8 +57,11 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Avatar file is required");
   }
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
-  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  const avatar = await uploadOnCloudinary(avatarLocalPath, "avatar-temp");
+  const coverImage = await uploadOnCloudinary(
+    coverImageLocalPath,
+    "cover-temp"
+  );
 
   if (!avatar) {
     throw new ApiError(400, "Avatar file is required");
@@ -66,8 +69,12 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const user = await User.create({
     fullName,
-    avatar: avatar.url,
-    coverImage: coverImage?.url || "",
+    avatar: {
+      url: avatar.url,
+    },
+    coverImage: {
+      url: coverImage?.url || "",
+    },
     email,
     password,
     username: username.toLowerCase(),
@@ -260,23 +267,24 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
+  if (!req.user) return null;
+
   const avatarLocalPath = req.file?.path;
 
   if (!avatarLocalPath) throw new ApiError(400, "Avatar file is missing");
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  const avatar = await uploadOnCloudinary(
+    avatarLocalPath,
+    req.user?.avatar?.publicId
+  );
 
   if (!avatar.url) throw new ApiError(400, "Error while uploading avatar");
 
-  const user = await User.findByIdAndUpdate(
-    req.user?._id,
-    {
-      $set: {
-        avatar: avatar.url,
-      },
-    },
-    { new: true }
-  ).select("-password");
+  const user = await User.findById(req.user._id).select("-password");
+
+  user.avatar.url = avatar.url;
+
+  await user.save({ validateBeforeSave: false });
 
   return res
     .status(200)
@@ -289,20 +297,19 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
   if (!coverImageLocalPath)
     throw new ApiError(400, "Cover image file is missing");
 
-  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  const coverImage = await uploadOnCloudinary(
+    coverImageLocalPath,
+    req.user?.coverImage?.publicId
+  );
 
   if (!coverImage.url)
     throw new ApiError(400, "Error while uploading coverImage");
 
-  const user = await User.findByIdAndUpdate(
-    req.user?._id,
-    {
-      $set: {
-        coverImage: coverImage.url,
-      },
-    },
-    { new: true }
-  ).select("-password");
+  const user = await User.findById(req.user._id).select("-password");
+
+  user.coverImage.url = coverImage.url;
+
+  await user.save({ validateBeforeSave: false });
 
   return res
     .status(200)
