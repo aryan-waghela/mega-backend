@@ -119,7 +119,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   if (!user) throw new ApiError(404, "user does not exist");
 
-  const isPasswordValid = await user.isPasswordCorrent(password);
+  const isPasswordValid = await user.isPasswordCorrect(password);
 
   if (!isPasswordValid) throw new ApiError(401, "Invalid user credentials");
 
@@ -249,7 +249,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 const getCurrentUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
-    .json(200, req.user, "Current user fetched successfully");
+    .json(new ApiResponse(200, req.user, "Current user fetched successfully"));
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
@@ -257,7 +257,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 
   if (!fullName && !email) throw new ApiError(400, "All fields are required");
 
-  const user = User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
@@ -414,7 +414,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
       $match: {
-        _id: new mongoose.Types.ObjectId(req.user_id),
+        _id: new mongoose.Types.ObjectId(req.user._id),
       },
     },
     {
@@ -455,7 +455,13 @@ const getWatchHistory = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, user[0], "Watch history fetched successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        "Watch history fetched successfully"
+      )
+    );
 });
 
 export {
