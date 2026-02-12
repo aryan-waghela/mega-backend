@@ -31,17 +31,18 @@ const userSchema = new mongoose.Schema(
         required: true,
       },
       public_id: {
-        type: "UUID",
+        type: String,
+        required: true,
         unique: true,
       },
     },
     coverImage: {
       url: {
         type: String, // cloudanary url
-        required: true,
       },
       public_id: {
-        type: "UUID",
+        type: String,
+        required: true,
         unique: true, // cover image publicId
       },
     },

@@ -1,5 +1,5 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { ApiError } from "../utils/ApiErrors.js";
+import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -59,14 +59,19 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Avatar file is required");
   }
 
-  const avatarPublicId = randomUUID();
-  const coverImagePublicId = randomUUID();
+  const avatarPublicId = `avatar-${randomUUID()}`;
+  const coverImagePublicId = `coverImage-${randomUUID()}`;
 
   const avatar = await uploadOnCloudinary(avatarLocalPath, avatarPublicId);
-  const coverImage = await uploadOnCloudinary(
-    coverImageLocalPath,
-    coverImagePublicId
-  );
+
+  let coverImage;
+
+  if (coverImageLocalPath.trim()) {
+    coverImage = await uploadOnCloudinary(
+      coverImageLocalPath,
+      coverImagePublicId
+    );
+  }
 
   if (!avatar) {
     throw new ApiError(400, "Avatar file is required");
@@ -80,7 +85,7 @@ const registerUser = asyncHandler(async (req, res) => {
     },
     coverImage: {
       url: coverImage?.url || "",
-      public_id: coverImage?.url ? coverImagePublicId : undefined,
+      public_id: coverImagePublicId,
     },
     email,
     password,
