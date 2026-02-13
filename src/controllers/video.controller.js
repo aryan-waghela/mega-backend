@@ -12,9 +12,7 @@ import { randomUUID } from "crypto";
 const getAllVideos = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
 
-  const matchConditions = {
-    isPublished: true,
-  };
+  const matchConditions = {};
 
   if (query) {
     matchConditions.$or = [
@@ -26,7 +24,15 @@ const getAllVideos = asyncHandler(async (req, res) => {
   if (userId) {
     if (!isValidObjectId(userId)) throw new ApiError(400, "Invalid userId");
 
-    matchConditions.owner = new mongoose.Types.ObjectId(userId);
+    requestedUserId = new mongoose.Types.ObjectId(userId);
+
+    matchConditions.owner = requestedUserId;
+
+    if (!requestedUserId.equals(req.user._id)) {
+      matchConditions.isPublished = true;
+    }
+  } else {
+    matchConditions.isPublished = true;
   }
 
   const sortOptions = {};

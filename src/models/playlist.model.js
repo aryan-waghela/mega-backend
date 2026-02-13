@@ -10,11 +10,15 @@ const playlistSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    isPrivate: {
+      type: Boolean,
+      default: true,
+    },
     videos: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Video",
-      }
+      },
     ],
     owner: {
       type: mongoose.Schema.Types.ObjectId,
@@ -24,5 +28,6 @@ const playlistSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+playlistSchema.index({ owner: 1, name: 1 }, { unique: true });
 
 export const Playlist = mongoose.model("Playlist", playlistSchema);
