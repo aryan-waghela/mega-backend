@@ -222,7 +222,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
   await Video.findByIdAndDelete(videoId);
 
   await deleteFromCloudinary(video.videoFile?.public_id, "video");
-  await deleteFromCloudinary(video.thumbnail?.public_id);
+  await deleteFromCloudinary(video.thumbnail?.public_id, "image");
 
   return res.status(200).json(
     new ApiResponse(
