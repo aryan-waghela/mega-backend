@@ -1,3 +1,4 @@
+import { channel } from "diagnostics_channel";
 import mongoose from "mongoose";
 
 const subscriptionSchema = new mongoose.Schema(
@@ -13,5 +14,8 @@ const subscriptionSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+subscriptionSchema.index({ channel: 1 });
+subscriptionSchema.index({ subscriber: 1 });
 
 export const Subscription = mongoose.model("Subscription", subscriptionSchema);
